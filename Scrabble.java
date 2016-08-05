@@ -11,22 +11,32 @@ public class Scrabble {
 	
 	private static int maxScore = 0;
 	private static String maxWord = "";
+	private static final char DO_NOT_OMIT_CHARACTERS = ' ';
 	
 	// Main function calling all the other functions
 	public static void main(String[] args) {
 	
-		String rack = "aaazeta";
-		int[] scores = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26};
+		String rack = "zzaaaaa ";
+		int[] scores = {1, 3, 3, 2, 1, 4, 2, 4, 1, 8, 5, 1, 3, 1, 1, 3, 10, 1, 1, 1, 1, 4, 4, 8, 4, 10};
 		char[] rackArr = rack.toCharArray();
 		Arrays.sort(rackArr);
-		ArrayList<String> words = getWordsFromFile("C:\\Users\\desriram\\workspace\\Anagrams\\src\\sowpods.txt");
+		ArrayList<String> words = getWordsFromFile("C:\\Users\\abadrinath\\Desktop\\sowpods.txt");
 		ArrayList<String> wordsCopy = (ArrayList<String>) words.clone();
 		sortAllWords(wordsCopy);
 		HashMap<String, ArrayList<Integer>> hash = putIntoHashMap(wordsCopy);
 		makeCombinationsAndCheck(hash,rack,scores,words);
+		///
+		handleSpace(hash,rack,scores,words);
 		p(getMaxWord());
 	}
-	
+	private static void handleSpace(HashMap<String, ArrayList<Integer>> hash,String rack,int[] scores,ArrayList<String> words){
+		String rackWithEmptyTile;
+		for(char c='a';c<='z';c++){
+			rackWithEmptyTile=rack+c;
+			makeCombinationsAndCheck(hash,rackWithEmptyTile,scores,words);
+		}
+
+	}
 	private static String getMaxWord() {
 		return maxWord;
 	}
@@ -35,12 +45,21 @@ public class Scrabble {
 		StringBuilder output = new StringBuilder();
 		combine(hash,inputstring,output,scores,words);
 	}
-	
-	public static void combine(HashMap<String,ArrayList<Integer>> hash, String inputstring,StringBuilder output,int[] scores, ArrayList<String> words) { 
-		combine(hash,inputstring,output,0,scores, words); 
+
+	public static void makeCombinationsAndCheck(HashMap<String,ArrayList<Integer>> hash, String inputstring,int[] scores, ArrayList<String> words, char characterToOmit) {
+		StringBuilder output = new StringBuilder();
+		combine(hash,inputstring,output,scores,words, characterToOmit);
 	}
 	
-    private static void combine(HashMap<String,ArrayList<Integer>> hash,String inputstring,StringBuilder output,int start ,int[] scores,ArrayList<String> words){
+	public static void combine(HashMap<String,ArrayList<Integer>> hash, String inputstring,StringBuilder output,int[] scores, ArrayList<String> words) { 
+		combine(hash,inputstring,output,0,scores, words, DO_NOT_OMIT_CHARACTERS);
+	}
+
+	public static void combine(HashMap<String,ArrayList<Integer>> hash, String inputstring,StringBuilder output,int[] scores, ArrayList<String> words, char characterToOmit) {
+		combine(hash,inputstring,output,0,scores, words, characterToOmit);
+	}
+	
+    private static void combine(HashMap<String,ArrayList<Integer>> hash,String inputstring,StringBuilder output,int start ,int[] scores,ArrayList<String> words, char characterToOmit){
     	
         for( int i = start; i < inputstring.length(); ++i ){
             output.append( inputstring.charAt(i) );
@@ -50,12 +69,12 @@ public class Scrabble {
             String temp = String.copyValueOf(oArr);
             if(hash.containsKey(temp))
             	if(calcScore(oStr,scores) > maxScore) {
-            		maxScore = calcScore(oStr,scores);
+            		maxScore = calcScore(oStr,scores, characterToOmit);
             		maxWord = words.get(hash.get(temp).get(0));
             	}
             	
             if ( i < inputstring.length() )
-            combine(hash,inputstring,output,i + 1,scores,words);
+            combine(hash,inputstring,output,i + 1,scores,words, characterToOmit);
             output.setLength( output.length() - 1 );
         }
     }
@@ -65,8 +84,19 @@ public class Scrabble {
 	
 	private static int calcScore(String in,int[] scores) {
 		int sum = 0;
-		for(int i=0;i<in.length();i++)
-			sum+=scores[in.charAt(i)-'a'];
+		for(int i=0;i<in.length();i++) {
+			if (in.charAt(i) != ' ') {
+				sum += scores[in.charAt(i) - 'a'];
+			}
+		}
+		return sum;
+	}
+
+	private static int calcScore(String in, int[] scores, char characterToOmit) {
+		int sum = calcScore(in, scores);
+		if (characterToOmit != DO_NOT_OMIT_CHARACTERS) {
+			sum -= scores[characterToOmit - 'a'];
+		}
 		return sum;
 	}
 
@@ -116,7 +146,7 @@ public class Scrabble {
 		    sc = new Scanner(inputStream, "UTF-8");
 		    while (sc.hasNextLine()) {
 		        String line = sc.nextLine();
-		        words.add(line);
+		        words.add(line.toLowerCase());
 		    }
 		    // note that Scanner suppresses exceptions
 		    if (sc.ioException() != null) {
